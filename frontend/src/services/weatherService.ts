@@ -5,7 +5,8 @@
 import axios from 'axios';
 import type { WeatherData, ForecastDay, HourlyForecast, GraphDataPoint, WeatherCondition, TimeRange } from '../types/weather';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Create axios instance for weather (public routes - no auth)
 const weatherApi = axios.create({
