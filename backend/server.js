@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 
 // ====================== CORS FIX ======================
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'], // Add your frontend ports
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'https://karachi-weather.vercel.app/'], // Add your frontend ports
   credentials: true,           // Important for cookies & auth
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -80,17 +80,40 @@ app.use('*', (req, res) => {
 });
 
 // MongoDB Connection
+// mongoose.connect(process.env.MONGO_URI, {
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+// })
+// .then(() => {
+//   console.log('✅ MongoDB Connected');
+//   app.listen(PORT, '0.0.0.0', () => {
+//     console.log(`🚀 Server running on http://localhost:${PORT}`);
+//   });
+// })
+// .catch(err => {
+//   console.error('❌ MongoDB connection error:', err);
+//   process.exit(1);
+// });
+
+
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => {
   console.log('✅ MongoDB Connected');
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-  });
 })
 .catch(err => {
   console.error('❌ MongoDB connection error:', err);
-  process.exit(1);
 });
+
+// Start server only in local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}
+
+// Export app for Vercel
+module.exports = app;
