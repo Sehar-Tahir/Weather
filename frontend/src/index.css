@@ -1,0 +1,2199 @@
+@import "tailwindcss";
+
+/* ============================================================
+   WEATHERVERSE — GLOBAL CSS
+   Custom properties, glassmorphism utilities, animations
+   ============================================================ */
+
+:root {
+  /* --font-primary: "Inter", sans-serif;
+  --font-display: "Orbitron", sans-serif; */
+  --font-primary: "Poppins", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+
+  /* Brand Colors */
+  --clr-bg-start: #020817;
+  --clr-bg-mid: #0a1628;
+  --clr-bg-end: #061020;
+  --clr-accent: #38bdf8;
+  --clr-accent-2: #818cf8;
+  --clr-accent-3: #34d399;
+  --clr-danger: #f87171;
+  --clr-warning: #fb923c;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-hover: rgba(255, 255, 255, 0.10);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-accent: rgba(56, 189, 248, 0.35);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --glass-blur: blur(16px);
+}
+
+/* ---- Reset & Base ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-primary);
+  background: var(--clr-bg-start);
+  color: #e2e8f0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--clr-accent);
+  border-radius: 3px;
+}
+
+/* ============================================================
+   ANIMATED BACKGROUND
+   ============================================================ */
+.app-bg {
+  min-height: 100vh;
+  /* background:
+    radial-gradient(ellipse at 20% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(129, 140, 248, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(52, 211, 153, 0.04) 0%, transparent 60%),
+    linear-gradient(135deg, #020817 0%, #0a1628 40%, #061020 70%, #020817 100%); */
+    background: linear-gradient(180deg, #1E4FA0 0%, #3A7FD5 100%);
+  position: relative;
+}
+
+/* Moving orbs background */
+.app-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 85%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(129, 140, 248, 0.08) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+  animation: orb-drift 20s ease-in-out infinite alternate;
+}
+
+@keyframes orb-drift {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* Stars / particles */
+.stars {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle var(--dur, 3s) ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  0% {
+    opacity: 0.1;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+/* ============================================================
+   GLASSMORPHISM UTILITIES
+   ============================================================ */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+
+.glass-card:hover {
+  border-color: var(--glass-border-accent);
+  box-shadow:
+    var(--glass-shadow),
+    0 0 20px rgba(56, 189, 248, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  transform: translateY(-2px);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #e2e8f0;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  outline: none;
+}
+
+.glass-input:focus {
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15), 0 0 20px rgba(56, 189, 248, 0.08);
+}
+
+.glass-input::placeholder {
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.glass-btn {
+  background: rgba(56, 189, 248, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(56, 189, 248, 0.30);
+  border-radius: 12px;
+  color: #38bdf8;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.glass-btn:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+  transform: translateY(-1px);
+}
+
+.glass-btn-primary {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.8), rgba(129, 140, 248, 0.8));
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  border-radius: 12px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.glass-btn-primary:hover {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 1), rgba(129, 140, 248, 1));
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-glow {
+  text-shadow:
+    0 0 10px rgba(56, 189, 248, 0.8),
+    0 0 20px rgba(56, 189, 248, 0.4),
+    0 0 40px rgba(56, 189, 248, 0.2);
+}
+
+.text-glow-purple {
+  text-shadow:
+    0 0 10px rgba(129, 140, 248, 0.8),
+    0 0 20px rgba(129, 140, 248, 0.4);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #38bdf8, #818cf8, #34d399);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-blue {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============================================================
+   NAVBAR
+   ============================================================ */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  /* background: rgba(2, 8, 23, 0.7); */
+  /* background: #2E6FCB !important; */
+  background: rgba(46, 111, 203, 0.85) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.nav-link {
+  color: rgba(148, 163, 184, 0.85);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+/* ============================================================
+   DROPDOWN
+   ============================================================ */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  background: rgba(10, 22, 40, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.08);
+  padding: 8px;
+  animation: dropdown-in 0.2s ease-out forwards;
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  color: rgba(148, 163, 184, 0.9);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background: rgba(56, 189, 248, 0.10);
+  color: #38bdf8;
+}
+
+/* ============================================================
+   SEARCH BAR
+   ============================================================ */
+.search-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 680px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px 56px 16px 52px;
+  font-size: 1rem;
+  font-family: var(--font-primary);
+}
+
+.search-icon-left {
+  position: absolute;
+  left: 16px;
+  color: rgba(148, 163, 184, 0.5);
+  pointer-events: none;
+}
+
+.search-btn {
+  position: absolute;
+  right: 6px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+}
+
+.search-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.search-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(148, 163, 184, 0.85);
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: var(--font-primary);
+  font-weight: 500;
+}
+
+.search-option-btn:hover,
+.search-option-btn.active {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+}
+
+/* Suggestions */
+.suggestions-box {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: rgba(10, 22, 40, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  overflow: hidden;
+  z-index: 50;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  animation: dropdown-in 0.15s ease-out;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  font-size: 0.9rem;
+  color: rgba(148, 163, 184, 0.9);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.suggestion-item:hover {
+  background: rgba(56, 189, 248, 0.08);
+  color: #38bdf8;
+}
+
+/* ============================================================
+   WEATHER CARD (HERO)
+   ============================================================ */
+.weather-hero-card {
+  background: linear-gradient(135deg,
+      rgba(56, 189, 248, 0.12) 0%,
+      rgba(129, 140, 248, 0.08) 50%,
+      rgba(52, 211, 153, 0.06) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(56, 189, 248, 0.20);
+  border-radius: 24px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 0 40px rgba(56, 189, 248, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.weather-hero-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.temp-display {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 8vw, 6rem);
+  font-weight: 700;
+  line-height: 1;
+  color: white;
+  text-shadow: 0 0 30px rgba(56, 189, 248, 0.5);
+}
+
+.temp-unit-toggle {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.unit-btn {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.7);
+}
+
+.unit-btn.active {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  color: white;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);
+}
+
+/* ============================================================
+   STAT PILLS
+   ============================================================ */
+.stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  transition: all 0.3s;
+  min-width: 90px;
+}
+
+.stat-pill:hover {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+  transform: translateY(-2px);
+}
+
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+}
+
+/* ============================================================
+   WEATHER ICON ANIMATIONS
+   ============================================================ */
+.weather-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.5));
+}
+
+.weather-icon-wrapper.sunny {
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6));
+  animation: spin-slow 20s linear infinite;
+}
+
+.weather-icon-wrapper.cloudy {
+  animation: float 4s ease-in-out infinite;
+}
+
+.weather-icon-wrapper.rainy {
+  animation: sway 3s ease-in-out infinite;
+}
+
+.weather-icon-wrapper.snowy {
+  animation: float 5s ease-in-out infinite;
+  filter: drop-shadow(0 0 16px rgba(186, 230, 253, 0.6));
+}
+
+.weather-icon-wrapper.stormy {
+  animation: pulse-glow 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes sway {
+
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.8));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 35px rgba(251, 191, 36, 1));
+  }
+}
+
+/* ============================================================
+   GRAPH SECTION
+   ============================================================ */
+.graph-container {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+  padding: 24px;
+}
+
+.graph-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.graph-tab {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: transparent;
+  color: rgba(148, 163, 184, 0.7);
+  font-family: var(--font-primary);
+  transition: all 0.25s;
+}
+
+.graph-tab.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(129, 140, 248, 0.25));
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+}
+
+.graph-tab:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(148, 163, 184, 0.9);
+}
+
+/* ============================================================
+   FORECAST CARDS (7-day)
+   ============================================================ */
+.forecast-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.4) transparent;
+}
+
+.forecast-day-card {
+  flex: 0 0 auto;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.forecast-day-card:hover,
+.forecast-day-card.today {
+  background: rgba(56, 189, 248, 0.10);
+  border-color: rgba(56, 189, 248, 0.30);
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.12);
+  transform: translateY(-3px);
+}
+
+/* ============================================================
+   GLOBAL CITIES
+   ============================================================ */
+.city-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(148, 163, 184, 0.85);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+
+.city-chip:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.15);
+}
+
+/* ============================================================
+   AQI INDICATOR
+   ============================================================ */
+.aqi-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #34d399, #fbbf24, #f87171);
+  position: relative;
+  overflow: visible;
+}
+
+.aqi-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  transition: left 0.5s ease;
+}
+
+/* ============================================================
+   LOADING SKELETON
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.09) 50%,
+      rgba(255, 255, 255, 0.04) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 10px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================================
+   ERROR STATE
+   ============================================================ */
+.error-card {
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  color: #fca5a5;
+}
+
+/* ============================================================
+   SECTION TITLES
+   ============================================================ */
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.10);
+  border: 1px solid rgba(56, 189, 248, 0.20);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+.divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.08), transparent);
+  margin: 4px 0;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .temp-display {
+    font-size: 3.5rem;
+  }
+
+  .search-input {
+    padding: 14px 50px 14px 46px;
+    font-size: 0.9rem;
+  }
+
+  .stat-pill {
+    min-width: 75px;
+    padding: 10px 12px;
+  }
+}
+
+/* ============================================================
+   UTILITY ANIMATIONS
+   ============================================================ */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.35s ease-out forwards;
+}
+
+/* Stagger delays */
+.delay-100 {
+  animation-delay: 0.1s;
+  opacity: 0;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+  opacity: 0;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+  opacity: 0;
+}
+
+.delay-600 {
+  animation-delay: 0.6s;
+  opacity: 0;
+}
+
+/* Recharts custom tooltip */
+.recharts-tooltip-wrapper .custom-tooltip {
+  background: rgba(10, 22, 40, 0.95) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Recharts overrides */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.05) !important;
+}
+
+.recharts-text {
+  fill: rgba(148, 163, 184, 0.7) !important;
+  font-size: 12px !important;
+}
+
+/* ============================================================
+   3D MOTION & EFFECTS
+   ============================================================ */
+.perspective {
+  perspective: 1000px;
+}
+
+/* 3D tilt card */
+.tilt-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tilt-3d:hover {
+  transform: rotateY(6deg) rotateX(4deg) translateZ(20px);
+}
+
+/* Floating 3D icon */
+.float-3d {
+  animation: float-3d 6s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes float-3d {
+
+  0%,
+  100% {
+    transform: translateY(0) rotateY(0deg) rotateX(0deg);
+  }
+
+  25% {
+    transform: translateY(-12px) rotateY(8deg) rotateX(4deg);
+  }
+
+  50% {
+    transform: translateY(-6px) rotateY(0deg) rotateX(-4deg);
+  }
+
+  75% {
+    transform: translateY(-14px) rotateY(-8deg) rotateX(4deg);
+  }
+}
+
+/* 3D rotating cube/coin for hero icon */
+.spin-3d {
+  animation: spin-3d 10s linear infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes spin-3d {
+  from {
+    transform: rotateY(0deg);
+  }
+
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+/* 3D pop-in text */
+.text-3d {
+  text-shadow:
+    0 1px 0 rgba(56, 189, 248, 0.4),
+    0 2px 0 rgba(56, 189, 248, 0.3),
+    0 3px 0 rgba(56, 189, 248, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(56, 189, 248, 0.4);
+}
+
+.text-3d-purple {
+  text-shadow:
+    0 1px 0 rgba(129, 140, 248, 0.4),
+    0 2px 0 rgba(129, 140, 248, 0.3),
+    0 3px 0 rgba(129, 140, 248, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(129, 140, 248, 0.4);
+}
+
+/* Glowing pulse for live elements */
+.live-glow {
+  animation: live-glow 2s ease-in-out infinite;
+}
+
+@keyframes live-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.5);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(248, 113, 113, 0);
+  }
+}
+
+/* 3D button press */
+.btn-3d {
+  position: relative;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 6px 0 rgba(2, 8, 23, 0.6), 0 8px 20px rgba(56, 189, 248, 0.25);
+}
+
+.btn-3d:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(2, 8, 23, 0.6), 0 4px 10px rgba(56, 189, 248, 0.2);
+}
+
+/* Hover lift + glow card */
+.hover-lift {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s;
+}
+
+.hover-lift:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(56, 189, 248, 0.18);
+}
+
+/* Shine sweep effect */
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.7s;
+}
+
+.shine:hover::after {
+  left: 140%;
+}
+
+/* Gradient animated text */
+.text-animate-gradient {
+  background: linear-gradient(90deg, #38bdf8, #818cf8, #34d399, #38bdf8);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 5s linear infinite;
+}
+
+@keyframes gradient-shift {
+  to {
+    background-position: 300% center;
+  }
+}
+
+/* ============================================================
+   STORY CARDS (AccuWeather style)
+   ============================================================ */
+.story-card {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s;
+  transform-style: preserve-3d;
+}
+
+.story-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 0 0 30px rgba(56, 189, 248, 0.15);
+}
+
+.story-card-img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  transition: transform 0.6s;
+}
+
+.story-card:hover .story-card-img {
+  transform: scale(1.08);
+}
+
+.story-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(2, 8, 23, 0.95) 0%, rgba(2, 8, 23, 0.2) 60%, transparent 100%);
+  pointer-events: none;
+}
+
+.category-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+/* ============================================================
+   BLOG CARDS
+   ============================================================ */
+.blog-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  transition: transform 0.35s, border-color 0.35s, box-shadow 0.35s;
+}
+
+.blog-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--glass-border-accent);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(56, 189, 248, 0.12);
+}
+
+/* ============================================================
+   ADMIN PANEL
+   ============================================================ */
+.admin-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(148, 163, 184, 0.85);
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.admin-sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+}
+
+.admin-sidebar-item.active {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(129, 140, 248, 0.2));
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.admin-stat-card {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(129, 140, 248, 0.06));
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 18px;
+  padding: 20px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(56, 189, 248, 0.15);
+}
+
+/* Form inputs in admin */
+.admin-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  font-family: var(--font-primary);
+}
+
+.admin-input:focus {
+  border-color: var(--clr-accent);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+}
+
+.admin-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.9);
+  margin-bottom: 6px;
+}
+
+/* ============================================================
+   LOGIN PAGE
+   ============================================================ */
+.login-card {
+  background: rgba(10, 22, 40, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 60px rgba(56, 189, 248, 0.08);
+}
+
+/* ============================================================
+   DYNAMIC WEATHER THEMES (Smart Background System)
+   ============================================================ */
+.weather-theme {
+  transition: background 1.2s ease-in-out;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ☀️ HOT / SUNNY THEME */
+.theme-hot {
+  background:
+    radial-gradient(ellipse at 70% 20%, rgba(251, 191, 36, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse at 20% 80%, rgba(251, 146, 60, 0.12) 0%, transparent 50%),
+    linear-gradient(135deg, #1a1206 0%, #2a1a0a 35%, #1f1408 70%, #0f0a04 100%);
+}
+
+/* ❄️ COLD / SNOWY THEME */
+.theme-cold {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(147, 197, 253, 0.16) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(186, 230, 253, 0.12) 0%, transparent 50%),
+    linear-gradient(135deg, #050d1a 0%, #0a1a2e 35%, #08182a 70%, #030a14 100%);
+}
+
+/* 🌧️ RAINY THEME */
+.theme-rainy {
+  background:
+    radial-gradient(ellipse at 50% 10%, rgba(71, 85, 105, 0.25) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(51, 65, 85, 0.18) 0%, transparent 50%),
+    linear-gradient(135deg, #060a12 0%, #0d141f 40%, #0a0f18 70%, #05080e 100%);
+}
+
+/* 🌙 PLEASANT / DEFAULT (cool) */
+.theme-pleasant {
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(129, 140, 248, 0.10) 0%, transparent 50%),
+    linear-gradient(135deg, #020817 0%, #0a1628 40%, #061020 70%, #020817 100%);
+}
+
+/* ── SUN RAYS ANIMATION (hot) ── */
+.sun-rays {
+  position: absolute;
+  top: -120px;
+  right: -120px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.35) 0%, rgba(251, 191, 36, 0.08) 35%, transparent 65%);
+  border-radius: 50%;
+  animation: sun-pulse 5s ease-in-out infinite;
+}
+
+.sun-rays::before {
+  content: "";
+  position: absolute;
+  inset: -60px;
+  background: conic-gradient(from 0deg,
+      transparent 0deg, rgba(251, 191, 36, 0.12) 12deg, transparent 24deg,
+      transparent 36deg, rgba(251, 191, 36, 0.12) 48deg, transparent 60deg,
+      transparent 72deg, rgba(251, 191, 36, 0.12) 84deg, transparent 96deg,
+      transparent 108deg, rgba(251, 191, 36, 0.12) 120deg, transparent 132deg,
+      transparent 180deg, rgba(251, 191, 36, 0.12) 192deg, transparent 204deg,
+      transparent 240deg, rgba(251, 191, 36, 0.12) 252deg, transparent 264deg,
+      transparent 300deg, rgba(251, 191, 36, 0.12) 312deg, transparent 324deg);
+  border-radius: 50%;
+  animation: rays-spin 40s linear infinite;
+}
+
+@keyframes sun-pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes rays-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── RAIN ANIMATION ── */
+.rain-drop {
+  position: absolute;
+  top: -20px;
+  width: 1.5px;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, rgba(125, 211, 252, 0.45));
+  animation: rain-fall linear infinite;
+}
+
+@keyframes rain-fall {
+  to {
+    transform: translateY(110vh);
+  }
+}
+
+/* ── SNOW ANIMATION ── */
+.snow-flake {
+  position: absolute;
+  top: -10px;
+  color: rgba(219, 234, 254, 0.8);
+  user-select: none;
+  animation: snow-fall linear infinite;
+}
+
+@keyframes snow-fall {
+  0% {
+    transform: translateY(-10px) translateX(0) rotate(0deg);
+  }
+
+  100% {
+    transform: translateY(110vh) translateX(40px) rotate(360deg);
+  }
+}
+
+/* ── HEAT SHIMMER (hot) ── */
+.heat-haze {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: linear-gradient(to top, rgba(251, 146, 60, 0.05), transparent);
+  animation: haze 4s ease-in-out infinite;
+}
+
+@keyframes haze {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* ============================================================
+   SCROLL REVEAL ANIMATIONS
+   ============================================================ */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-left.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-right {
+  opacity: 0;
+  transform: translateX(50px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-right.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-scale.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ============================================================
+   SECTION WRAPPER STYLING
+   ============================================================ */
+.section-heading {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   MEDIA UPLOADER
+   ============================================================ */
+.uploader-dropzone {
+  border: 2px dashed rgba(56, 189, 248, 0.3);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: center;
+  background: rgba(56, 189, 248, 0.04);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.uploader-dropzone:hover,
+.uploader-dropzone.dragging {
+  border-color: rgba(56, 189, 248, 0.6);
+  background: rgba(56, 189, 248, 0.08);
+  box-shadow: 0 0 24px rgba(56, 189, 248, 0.12);
+}
+
+.upload-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(148, 163, 184, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.upload-tab.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+}
+
+/* Page transitions */
+.page-enter {
+  animation: page-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  padding: 40px 30px;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(2, 8, 23, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fade-in 0.25s ease-out;
+}
+
+.modal-content {
+  background: rgba(10, 22, 40, 0.97);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: scale-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================================================
+   EMERGENCY FIXES - Tailwind Priority & Centering
+   ============================================================ */
+
+/* Force Tailwind utilities to work */
+@layer utilities {
+  .mx-auto {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .text-center {
+    text-align: center !important;
+  }
+
+  .flex {
+    display: flex !important;
+  }
+
+  .items-center {
+    align-items: center !important;
+  }
+
+  .justify-center {
+    justify-content: center !important;
+  }
+}
+
+/* Fix search container centering */
+.search-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.search-wrapper {
+  width: 100% !important;
+  max-width: 680px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.search-options {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
+}
+
+/* Fix section headings */
+.section-badge {
+  display: inline-flex !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+.text-center {
+  text-align: center !important;
+}
+
+
+/* ============================================================
+   PADDING ENHANCEMENTS & FULL WIDTH FIXES
+   ============================================================ */
+
+/* Global Padding Enhancements */
+section {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+@media (min-width: 640px) {
+  section {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  section {
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+  }
+}
+
+/* Weather Card Inner Padding */
+.weather-hero-card {
+  padding: 0 !important;
+}
+
+.weather-hero-card>div {
+  padding: 1.5rem !important;
+}
+
+@media (min-width: 640px) {
+  .weather-hero-card>div {
+    padding: 2rem !important;
+  }
+}
+
+/* Glass Card Default Padding */
+.glass-card {
+  padding: 1.25rem !important;
+}
+
+@media (min-width: 640px) {
+  .glass-card {
+    padding: 1.5rem !important;
+  }
+}
+
+/* ============================================================
+   7-DAY FORECAST - FULL WIDTH
+   ============================================================ */
+
+/* Forecast Container - Full Width Fix */
+.forecast-scroll {
+  display: flex !important;
+  gap: 1rem !important;
+  overflow-x: auto !important;
+  padding-bottom: 0.75rem !important;
+  scrollbar-width: thin !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+/* Remove any parent constraints */
+.forecast-scroll::-webkit-scrollbar {
+  height: 4px !important;
+}
+
+.forecast-day-card {
+  flex: 0 0 auto !important;
+  min-width: 110px !important;
+  padding: 1rem 0.75rem !important;
+}
+
+@media (min-width: 640px) {
+  .forecast-day-card {
+    min-width: 120px !important;
+    padding: 1.25rem 1rem !important;
+  }
+}
+
+/* Force full width on parent containers */
+[class*="ForecastCard"]>div,
+.forecast-card-container {
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+/* ============================================================
+   HOURLY FORECAST - FULL WIDTH
+   ============================================================ */
+
+/* Hourly Forecast Row */
+.hourly-forecast-row {
+  display: flex !important;
+  gap: 0.75rem !important;
+  overflow-x: auto !important;
+  padding-bottom: 0.75rem !important;
+  width: 100% !important;
+  scrollbar-width: thin !important;
+}
+
+.hourly-forecast-row::-webkit-scrollbar {
+  height: 4px !important;
+}
+
+.hourly-item {
+  flex: 0 0 auto !important;
+  min-width: 80px !important;
+  text-align: center !important;
+  padding: 0.75rem !important;
+}
+
+@media (min-width: 640px) {
+  .hourly-item {
+    min-width: 90px !important;
+    padding: 1rem !important;
+  }
+}
+
+/* ============================================================
+   ADDITIONAL COMPONENT PADDING
+   ============================================================ */
+
+/* Search Bar Container */
+.search-container {
+  padding: 0.5rem 0 1rem 0 !important;
+}
+
+/* Recent Searches */
+.recent-searches-container {
+  padding: 0.75rem !important;
+}
+
+@media (min-width: 640px) {
+  .recent-searches-container {
+    padding: 1rem !important;
+  }
+}
+
+/* Global Cities Section */
+.cities-grid {
+  padding: 1rem 0 !important;
+  gap: 0.75rem !important;
+}
+
+.city-chip {
+  padding: 0.6rem 1.25rem !important;
+}
+
+/* Graph Container */
+.graph-container {
+  padding: 1.25rem !important;
+}
+
+@media (min-width: 640px) {
+  .graph-container {
+    padding: 1.5rem !important;
+  }
+}
+
+/* Sidebar Cards */
+.wind-compass-card,
+.sun-position-card,
+.quick-stats-card {
+  padding: 1.25rem !important;
+}
+
+@media (min-width: 640px) {
+
+  .wind-compass-card,
+  .sun-position-card,
+  .quick-stats-card {
+    padding: 1.5rem !important;
+  }
+}
+
+/* Unit Toggle Section */
+.unit-toggle-section {
+  padding: 1rem !important;
+}
+
+/* Footer */
+footer {
+  padding: 2rem 1.5rem !important;
+}
+
+@media (min-width: 640px) {
+  footer {
+    padding: 2.5rem 2rem !important;
+  }
+}
+
+/* ============================================================
+   BLOG & STORIES CARDS PADDING
+   ============================================================ */
+
+.story-card {
+  padding: 0 !important;
+}
+
+.story-card-content {
+  padding: 1rem !important;
+}
+
+.blog-card {
+  padding: 0 !important;
+}
+
+.blog-card-content {
+  padding: 1rem !important;
+}
+
+/* ============================================================
+   RESPONSIVE PADDING UTILITIES
+   ============================================================ */
+
+@media (max-width: 640px) {
+  .hide-scrollbar-on-mobile {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Reduce padding on mobile for better spacing */
+  .glass-card {
+    padding: 1rem !important;
+  }
+
+  .section-badge {
+    padding: 0.25rem 0.75rem !important;
+    font-size: 0.65rem !important;
+  }
+}
+
+/* ============================================================
+   ENSURE NO OVERFLOW ISSUES
+   ============================================================ */
+
+/* Prevent horizontal scroll issues */
+body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+}
+
+/* Ensure all containers respect viewport */
+.max-w-7xl {
+  max-width: 80rem !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Fix any potential Tailwind conflicts */
+[class*="grid"] {
+  max-width: 100% !important;
+}
+
+[class*="space-y-"]>*+* {
+  margin-top: var(--space, 1rem) !important;
+}
+
+/* ============================================================
+   HOURLY FORECAST - FULL WIDTH & ENHANCED SCROLL
+   ============================================================ */
+
+/* Ensure full width for hourly forecast container */
+.hourly-forecast-container {
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+/* Custom scrollbar for hourly forecast */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.4) rgba(255, 255, 255, 0.05);
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 10px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.6);
+}
+
+/* ============================================================
+   WEATHER CARD - ENHANCED STAT PILLS
+   ============================================================ */
+
+.stat-pill {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+}
+
+.stat-pill:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* Enhanced Glass Card for AQI and Sun sections */
+.glass-card {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================ */
+
+@media (max-width: 640px) {
+  .stat-pill {
+    padding: 10px 8px !important;
+  }
+
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .temp-display {
+    font-size: 3rem !important;
+  }
+}
+
+/* Smooth scrolling for horizontal forecasts */
+.forecast-scroll,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+
+/* Add these CSS rules to your global stylesheet */
+
+/* ============================================================
+   MEDIA STYLES - Proper Image & Video Sizing
+   ============================================================ */
+
+/* Blog Cover Images */
+.blog-cover-image {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 12px;
+}
+
+/* Story Thumbnails */
+.story-thumbnail {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Admin Dashboard Preview Images */
+.admin-media-preview {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* Blog Card Images */
+.blog-card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+/* Story Card Images */
+.story-card-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+/* Modal/Full View Images */
+.modal-media-image {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  background: #0f172a;
+}
+
+/* Video Containers */
+.video-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  /* 16:9 Aspect Ratio */
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.video-container iframe,
+.video-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .blog-cover-image {
+    height: 180px;
+  }
+
+  .story-thumbnail {
+    height: 140px;
+  }
+
+  .blog-card-image {
+    height: 160px;
+  }
+
+  .story-card-image {
+    height: 140px;
+  }
+}
+
+/* Image Gallery Grid */
+.image-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.image-gallery-item {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.image-gallery-item:hover {
+  transform: scale(1.05);
+}
+
+/* Add these to your existing CSS */
+
+/* Consistent image sizing across all components */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Blog content images */
+.blog-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+
+/* Admin form preview */
+.image-preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* Video responsiveness */
+video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+
+/* Margin padings */
+.topHeading {
+  margin-top: 40px !important;
+  color: #ffffff;
+}
+
+.recentSearch {
+  margin-bottom: 20px;
+}
+
+.graphSection {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.footer {
+  margin-top: 20px;
+}
+
+.footText {
+  margin-top: 30px;
+}
+
+.navbar {
+  padding: 0px 20px !important;
+}
+.search-input::placeholder{
+  color: white;
+  opacity: 0.8;
+}
+
+.search-option-btn {
+  color: white;
+}
+.contact{
+  margin: 30px 0px;
+}
+
+/*  */
+
+/* ============================= */
+/* ADMIN DASHBOARD SPACING FIX  */
+/* ============================= */
+
+.app-bg {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Main layout spacing */
+main {
+  padding: 24px !important;
+}
+
+/* Sidebar spacing fix */
+aside {
+  padding: 20px !important;
+}
+
+/* Sidebar items alignment */
+.admin-sidebar-item {
+  padding: 10px 12px !important;
+  margin: 2px 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Section spacing uniform */
+h1, h2, h3 {
+  margin: 0 !important;
+}
+
+/* Cards spacing consistency */
+.glass-card {
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+}
+
+/* Grid spacing fix */
+.grid {
+  gap: 16px !important;
+}
+
+/* Stats cards spacing */
+.cursor-pointer {
+  padding: 16px !important;
+}
+
+/* Modal spacing fix */
+.modal-content {
+  padding: 20px !important;
+}
+
+/* Input spacing fix */
+.admin-input {
+  padding: 10px 12px !important;
+  margin-bottom: 10px !important;
+}
+
+/* Remove extra side gaps */
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden;
+}
+
+/*  */
