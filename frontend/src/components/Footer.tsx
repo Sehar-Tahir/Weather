@@ -67,6 +67,7 @@ export default function Footer() {
                 </a>
               ))}
             </div>
+            
             <p className="flex items-center gap-1 text-xs text-white">
               <MapPin size={11} /> Karachi, Pakistan
             </p>

@@ -30,7 +30,7 @@ connectDB();
 // ── CORS Configuration ─────────────────────────────────────
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',')
-  : ['http://localhost:5173', 'http://localhost:3000'];
+  : ['http://localhost:5173', 'http://localhost:3000' , 'https://karachi-weather.vercel.app'];
 
 // Main CORS middleware
 app.use(cors({
