@@ -1,6 +1,4 @@
-// ============================================================
-// KARACHI WEATHER APP — Blog Page
-// ============================================================
+// pages/Blog.tsx - Updated Image Fallbacks
 
 import { useState } from 'react';
 import Navbar from '../components/Navbar';
@@ -11,6 +9,15 @@ import type { Blog as BlogType } from '../store/localStore';
 import { Clock, X, BookOpen, User } from 'lucide-react';
 import BlogCard from '../components/BlogCard';
 import RevealOnScroll from '../components/RevealOnScroll';
+
+// Local SVG fallback - No external dependencies
+const FALLBACK_IMAGE = 'data:image/svg+xml,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <rect width="800" height="400" fill="#1a1a2e"/>
+  <text x="400" y="180" font-family="Arial" font-size="32" fill="#475569" text-anchor="middle">No Image</text>
+  <text x="400" y="230" font-family="Arial" font-size="24" fill="#334155" text-anchor="middle">📷</text>
+</svg>
+`);
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -34,12 +41,9 @@ export default function Blog() {
           {/* Header */}
           <div className="text-center mb-12">
             <div className="section-badge mx-auto mb-4"><BookOpen size={12} /> Weather Blog</div>
-            {/* <h1 className="font-display text-4xl sm:text-5xl font-900 text-white mb-4 text-3d">
-              Karachi <span className="text-animate-gradient">Weather</span>
-            </h1> */}
             <h1 className="font-display text-5xl sm:text-6xl lg:text-6xl font-bold text-white mb-6 text-3d">
-                Karachi Weather
-              </h1>
+              Karachi Weather
+            </h1>
             <p className="text-white text-lg max-w-2xl mx-auto">
               In-depth articles, guides and analysis on climate, forecasting and weather science.
             </p>
@@ -50,12 +54,17 @@ export default function Blog() {
             <div className="blog-card mb-10 lg:flex-row hover-lift cursor-pointer"
               onClick={() => setSelected(blogs[0])}>
               <div className="lg:w-1/2 h-64 lg:h-auto overflow-hidden">
-                <img src={blogs[0].coverImage} alt={blogs[0].title} loading="lazy" decoding="async"
+                <img 
+                  src={blogs[0].coverImage || FALLBACK_IMAGE} 
+                  alt={blogs[0].title} 
+                  loading="lazy" 
+                  decoding="async"
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                   style={{ objectPosition: 'center' }}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=No+Image';
-                  }} />
+                    (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+                  }} 
+                />
               </div>
               <div className="lg:w-1/2 p-8 flex flex-col justify-center">
                 <div className="flex items-center gap-3 mb-3">
@@ -92,11 +101,11 @@ export default function Blog() {
           <div className="modal-content max-w-3xl" onClick={e => e.stopPropagation()}>
             {selected.coverImage && (
               <img 
-                src={selected.coverImage} 
+                src={selected.coverImage || FALLBACK_IMAGE} 
                 alt={selected.title} 
                 className="w-full max-h-96 object-contain bg-slate-900"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=No+Image';
+                  (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
                 }}
               />
             )}

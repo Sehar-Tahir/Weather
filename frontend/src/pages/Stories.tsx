@@ -1,6 +1,4 @@
-// ============================================================
-// KARACHI WEATHER APP — Stories Page (AccuWeather style)
-// ============================================================
+// pages/Stories.tsx - Updated Image Fallbacks
 
 import { useState } from 'react';
 import Navbar from '../components/Navbar';
@@ -10,6 +8,23 @@ import { useApp } from '../context/AppContext';
 import type { Story } from '../store/localStore';
 import { Play, Clock, X, FileText, Video } from 'lucide-react';
 import RevealOnScroll from '../components/RevealOnScroll';
+
+// Local SVG fallback - No external dependencies
+const FALLBACK_IMAGE = 'data:image/svg+xml,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <rect width="800" height="400" fill="#1a1a2e"/>
+  <text x="400" y="180" font-family="Arial" font-size="32" fill="#475569" text-anchor="middle">No Image</text>
+  <text x="400" y="230" font-family="Arial" font-size="24" fill="#334155" text-anchor="middle">📷</text>
+</svg>
+`);
+
+const FALLBACK_THUMB = 'data:image/svg+xml,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+  <rect width="400" height="200" fill="#1a1a2e"/>
+  <text x="200" y="95" font-family="Arial" font-size="20" fill="#475569" text-anchor="middle">No Image</text>
+  <text x="200" y="125" font-family="Arial" font-size="16" fill="#334155" text-anchor="middle">📷</text>
+</svg>
+`);
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -33,12 +48,9 @@ export default function Stories() {
           {/* Header */}
           <div className="text-center mb-12">
             <div className="section-badge mx-auto mb-4">📰 Weather Stories</div>
-            {/* <h1 className="font-display text-4xl sm:text-5xl font-900 text-white mb-4 text-3d">
-              Latest <span className="text-animate-gradient">Stories</span>
-            </h1> */}
             <h1 className="font-display text-5xl sm:text-6xl lg:text-6xl font-bold text-white mb-6 text-3d">
-                Latest Stories
-              </h1>
+              Latest Stories
+            </h1>
             <p className="text-white text-lg max-w-2xl mx-auto">
               Breaking weather news, alerts and video reports from across Karachi and beyond.
             </p>
@@ -50,14 +62,14 @@ export default function Stories() {
               onClick={() => setSelected(stories[0])}>
               <div className="relative h-64 lg:h-auto overflow-hidden">
                 <img 
-                  src={stories[0].thumbnail} 
+                  src={stories[0].thumbnail || FALLBACK_IMAGE} 
                   alt={stories[0].title} 
                   loading="lazy" 
                   decoding="async" 
                   className="w-full h-full object-cover"
                   style={{ objectPosition: 'center' }}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=No+Image';
+                    (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
                   }}
                 />
                 {stories[0].type === 'video' && (
@@ -87,43 +99,43 @@ export default function Stories() {
           {/* Grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {stories.slice(1).map((story, i) => (
-              <RevealOnScroll key={story.id} variant="up" delay={i * 70} className="story-card" >
-              <div onClick={() => setSelected(story)} className="cursor-pointer">
-                <div className="relative">
-                  <img 
-                    src={story.thumbnail} 
-                    alt={story.title} 
-                    loading="lazy" 
-                    decoding="async" 
-                    className="w-full h-48 object-cover"
-                    style={{ objectPosition: 'center' }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x200?text=No+Image';
-                    }}
-                  />
-                  <div className="story-card-overlay" />
-                  {story.type === 'video' && (
-                    <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-sky-500/80 backdrop-blur-sm flex items-center justify-center">
-                      <Play size={15} className="text-white ml-0.5" fill="white" />
+              <RevealOnScroll key={story.id} variant="up" delay={i * 70} className="story-card">
+                <div onClick={() => setSelected(story)} className="cursor-pointer">
+                  <div className="relative">
+                    <img 
+                      src={story.thumbnail || FALLBACK_THUMB} 
+                      alt={story.title} 
+                      loading="lazy" 
+                      decoding="async" 
+                      className="w-full h-48 object-cover"
+                      style={{ objectPosition: 'center' }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = FALLBACK_THUMB;
+                      }}
+                    />
+                    <div className="story-card-overlay" />
+                    {story.type === 'video' && (
+                      <div className="absolute top-3 right-3 w-9 h-9 rounded-full bg-sky-500/80 backdrop-blur-sm flex items-center justify-center">
+                        <Play size={15} className="text-white ml-0.5" fill="white" />
+                      </div>
+                    )}
+                    <div className="absolute bottom-3 left-3">
+                      <span className="category-tag">{story.category}</span>
                     </div>
-                  )}
-                  <div className="absolute bottom-3 left-3">
-                    <span className="category-tag">{story.category}</span>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-base font-bold text-white mb-2 leading-snug line-clamp-2">{story.title}</h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                        {story.type === 'video' ? <Video size={11} /> : <FileText size={11} />}
+                        {story.author}
+                      </span>
+                      <span className="text-xs text-slate-600 flex items-center gap-1">
+                        <Clock size={10} /> {timeAgo(story.createdAt)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="p-4">
-                  <h3 className="text-base font-bold text-white mb-2 leading-snug line-clamp-2">{story.title}</h3>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      {story.type === 'video' ? <Video size={11} /> : <FileText size={11} />}
-                      {story.author}
-                    </span>
-                    <span className="text-xs text-slate-600 flex items-center gap-1">
-                      <Clock size={10} /> {timeAgo(story.createdAt)}
-                    </span>
-                  </div>
-                </div>
-              </div>
               </RevealOnScroll>
             ))}
           </div>
@@ -160,11 +172,11 @@ export default function Stories() {
             ) : (
               selected.thumbnail && (
                 <img 
-                  src={selected.thumbnail} 
+                  src={selected.thumbnail || FALLBACK_IMAGE} 
                   alt={selected.title}
                   className="w-full max-h-96 object-contain bg-slate-900"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=No+Image';
+                    (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
                   }}
                 />
               )

@@ -1,92 +1,110 @@
 // ============================================================
-// WEATHERVERSE — Weather Service Layer
-// Communicates with OpenWeatherMap API
+// WEATHERVERSE — Weather Service
 // ============================================================
 
 const axios = require('axios');
+const AppError = require('../utils/AppError');
+const logger = require('../utils/logger');
 
 const OWM_BASE = 'https://api.openweathermap.org/data/2.5';
-const API_KEY  = process.env.OWM_API_KEY;
+const GEO_BASE = 'https://api.openweathermap.org/geo/1.0';
+const API_KEY = process.env.OWM_API_KEY;
 
 if (!API_KEY) {
-  console.warn('⚠  OWM_API_KEY not set in .env — weather API calls will fail.');
+  logger.warn('⚠ OWM_API_KEY not set in .env — weather API calls will fail.');
 }
 
-// ── Axios instance with defaults ───────────────────────────
+// ── Axios instances ────────────────────────────────────────
 const owm = axios.create({
   baseURL: OWM_BASE,
-  timeout: 8000,
+  timeout: 10000,
   params: {
     appid: API_KEY,
-    units: 'metric', // Celsius
+    units: 'metric',
   },
 });
 
-// ── Intercept 404 / 401 for better error messages ─────────
+const geo = axios.create({
+  baseURL: GEO_BASE,
+  timeout: 8000,
+  params: {
+    appid: API_KEY,
+  },
+});
+
+// ── Error interceptor ──────────────────────────────────────
 owm.interceptors.response.use(
   res => res,
   err => {
     if (err.response?.status === 404) {
-      const error = new Error('City or location not found');
-      error.status = 404;
-      return Promise.reject(error);
+      return Promise.reject(new AppError('City or location not found', 404));
     }
     if (err.response?.status === 401) {
-      const error = new Error('Invalid OpenWeatherMap API key');
-      error.status = 401;
-      return Promise.reject(error);
+      return Promise.reject(new AppError('Invalid OpenWeatherMap API key', 401));
+    }
+    if (err.response?.status === 429) {
+      return Promise.reject(new AppError('Too many requests. Please try again later.', 429));
     }
     return Promise.reject(err);
   }
 );
 
-/**
- * Fetch current weather.
- * @param {Object} params - { q, lat, lon, zip }
- */
+// ── Fetch current weather ──────────────────────────────────
 const fetchCurrentWeather = async (params) => {
-  const res = await owm.get('/weather', { params });
-  return res.data;
-};
-
-/**
- * Fetch 5-day / 3-hour forecast.
- * @param {string} city
- * @param {number} cnt - number of 3-hour steps (max 40)
- */
-const fetchForecast = async (city, cnt = 40) => {
-  const res = await owm.get('/forecast', {
-    params: { q: city, cnt },
-  });
-  return res.data;
-};
-
-/**
- * Fetch Air Quality Index.
- * @param {number} lat
- * @param {number} lon
- */
-const fetchAirQuality = async (lat, lon) => {
-  const res = await owm.get('/air_pollution', {
-    params: { lat, lon },
-  });
-  return res.data;
-};
-
-/**
- * Fetch one-call API (UV index, hourly, daily — requires paid plan or specific version).
- * Using basic free endpoints as fallback.
- * @param {number} lat
- * @param {number} lon
- */
-const fetchOneCall = async (lat, lon) => {
   try {
-    const res = await owm.get('/onecall', {
-      params: { lat, lon, exclude: 'minutely,alerts' },
+    const res = await owm.get('/weather', { params });
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ── Fetch forecast ─────────────────────────────────────────
+const fetchForecast = async (city, cnt = 40) => {
+  try {
+    const res = await owm.get('/forecast', {
+      params: { q: city, cnt },
     });
     return res.data;
-  } catch {
-    // Fallback for free tier
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ── Fetch air quality ─────────────────────────────────────
+const fetchAirQuality = async (lat, lon) => {
+  try {
+    const res = await owm.get('/air_pollution', {
+      params: { lat, lon },
+    });
+    return res.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ── Reverse geocode ────────────────────────────────────────
+const reverseGeocode = async (lat, lon) => {
+  try {
+    const res = await geo.get('/reverse', {
+      params: { lat, lon, limit: 1 },
+    });
+    return res.data;
+  } catch (error) {
+    logger.error(`Reverse geocode failed: ${error.message}`);
+    return null;
+  }
+};
+
+// ── Get city by name ───────────────────────────────────────
+const getCityByName = async (name) => {
+  try {
+    const res = await geo.get('/direct', {
+      params: { q: name, limit: 1 },
+    });
+    return res.data;
+  } catch (error) {
+    logger.error(`City lookup failed: ${error.message}`);
     return null;
   }
 };
@@ -95,10 +113,6 @@ module.exports = {
   fetchCurrentWeather,
   fetchForecast,
   fetchAirQuality,
-  fetchOneCall,
+  reverseGeocode,
+  getCityByName,
 };
-
-
-
-
-

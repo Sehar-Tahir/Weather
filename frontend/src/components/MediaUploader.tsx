@@ -1,12 +1,16 @@
-// components/MediaUploader.tsx - COMPLETE FIXED VERSION
+// frontend/src/components/MediaUploader.tsx - COMPLETE FIXED VERSION
+
 import { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Upload, Link, X, Image, Video, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Link, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface MediaUploaderProps {
   onUpload: (url: string, type: string) => void;
   onClose: () => void;
 }
+
+// API base URL - uses environment variable with fallback
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function MediaUploader({ onUpload, onClose }: MediaUploaderProps) {
   const { uploadFile, uploadByUrl } = useApp();
@@ -30,9 +34,15 @@ export default function MediaUploader({ onUpload, onClose }: MediaUploaderProps)
       console.log('Upload result:', result);
       
       if (result && result.url) {
+        // ✅ FIX: Ensure the URL is absolute
+        let imageUrl = result.url;
+        if (imageUrl.startsWith('/uploads')) {
+          imageUrl = `${API_BASE}${imageUrl}`;
+        }
+        
         setSuccess('File uploaded successfully!');
         setTimeout(() => {
-          onUpload(result.url, result.type || (file.type.startsWith('image') ? 'image' : 'video'));
+          onUpload(imageUrl, result.type || (file.type.startsWith('image') ? 'image' : 'video'));
           onClose();
         }, 1000);
       } else {
@@ -64,9 +74,15 @@ export default function MediaUploader({ onUpload, onClose }: MediaUploaderProps)
       console.log('URL upload result:', result);
       
       if (result && result.url) {
+        // ✅ FIX: Ensure the URL is absolute for URL uploads too
+        let imageUrl = result.url;
+        if (imageUrl.startsWith('/uploads')) {
+          imageUrl = `${API_BASE}${imageUrl}`;
+        }
+        
         setSuccess('URL added successfully!');
         setTimeout(() => {
-          onUpload(result.url, result.type || 'image');
+          onUpload(imageUrl, result.type || 'image');
           onClose();
         }, 1000);
       } else {

@@ -1,9 +1,8 @@
-// ============================================================
-// KARACHI WEATHER APP — BlogCard (Reusable)
-// ============================================================
+// components/BlogCard.tsx - Using Utility
 
 import { User, Clock, ArrowRight } from 'lucide-react';
 import type { Blog } from '../store/localStore';
+import { FALLBACK_IMAGE, handleImageError, getImageWithFallback } from '../utils/fallbackImages';
 
 interface BlogCardProps {
   blog: Blog;
@@ -23,15 +22,13 @@ export default function BlogCard({ blog, onClick, compact }: BlogCardProps) {
     <div className="blog-card cursor-pointer" onClick={onClick}>
       <div className={compact ? 'h-40 overflow-hidden' : 'h-44 overflow-hidden'}>
         <img
-          src={blog.coverImage}
+          src={getImageWithFallback(blog.coverImage)}
           alt={blog.title}
           loading="lazy"
           decoding="async"
           className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
           style={{ objectPosition: 'center' }}
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x200?text=No+Image';
-          }}
+          onError={handleImageError}
         />
       </div>
       <div className="p-5 flex flex-col flex-1">

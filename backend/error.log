@@ -1,0 +1,14 @@
+{"level":"error","message":"❌ MongoDB Connection Error: querySrv ECONNREFUSED _mongodb._tcp.cluster0.713it0w.mongodb.net","timestamp":"2026-06-27T07:59:42.591Z"}
+{"level":"error","message":"❌ MongoDB Connection Error: querySrv ECONNREFUSED _mongodb._tcp.cluster0.713it0w.mongodb.net","timestamp":"2026-06-27T08:00:57.900Z"}
+{"level":"error","message":"❌ MongoDB Connection Error: querySrv ECONNREFUSED _mongodb._tcp.cluster0.713it0w.mongodb.net","timestamp":"2026-06-27T08:01:18.260Z"}
+{"level":"error","message":"401 - Token expired - /api/admin/me - GET - 127.0.0.1","timestamp":"2026-06-27T08:24:35.625Z"}
+{"level":"error","message":"401 - Token expired - /api/admin/me - GET - 127.0.0.1","timestamp":"2026-06-27T08:24:35.750Z"}
+{"level":"error","message":"401 - Invalid refresh token - /api/admin/refresh - POST - 127.0.0.1","timestamp":"2026-06-27T08:24:36.030Z"}
+{"level":"error","message":"401 - Invalid refresh token - /api/admin/refresh - POST - 127.0.0.1","timestamp":"2026-06-27T08:24:36.099Z"}
+{"level":"error","message":"401 - Token expired - /api/admin/me - GET - 127.0.0.1","timestamp":"2026-06-27T09:31:37.715Z"}
+{"level":"error","message":"401 - Token expired - /api/admin/me - GET - 127.0.0.1","timestamp":"2026-06-27T09:31:37.861Z"}
+{"level":"error","message":"401 - Invalid refresh token - /api/admin/refresh - POST - 127.0.0.1","timestamp":"2026-06-27T09:31:38.281Z"}
+{"level":"error","message":"401 - Invalid refresh token - /api/admin/refresh - POST - 127.0.0.1","timestamp":"2026-06-27T09:31:38.395Z"}
+{"level":"error","message":"❌ MongoDB Connection Error: querySrv ECONNREFUSED _mongodb._tcp.cluster0.713it0w.mongodb.net","timestamp":"2026-06-27T09:38:03.391Z"}
+{"level":"error","message":"❌ MongoDB Connection Error: querySrv ECONNREFUSED _mongodb._tcp.cluster0.713it0w.mongodb.net","timestamp":"2026-06-27T09:56:37.327Z"}
+{"level":"error","message":"❌ MongoDB Connection Error: querySrv ETIMEOUT _mongodb._tcp.cluster0.713it0w.mongodb.net","timestamp":"2026-06-27T13:25:53.697Z"}

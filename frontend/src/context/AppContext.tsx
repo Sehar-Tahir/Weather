@@ -1,11 +1,9 @@
-// src/context/AppContext.tsx
+// ============================================================
+// WEATHERVERSE — App Context
+// ============================================================
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-
-// const API_URL = 'http://localhost:5000';
-// const API_URL = import.meta.env.VITE_API_URL || 'https://karachiweather-backend-1.onrender.com';
-const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
-
+import { authApi, storyApi, blogApi, uploadApi, contactApi } from '../services/api';
 
 interface AppContextType {
   currentAdmin: any;
@@ -14,6 +12,7 @@ interface AppContextType {
   stories: any[];
   blogs: any[];
   admins: any[];
+  contacts: any[];
   recentSearches: any[];
   loading: boolean;
   login: (email: string, password: string, isSuper?: boolean) => Promise<boolean>;
@@ -34,6 +33,9 @@ interface AppContextType {
   refreshStories: () => Promise<void>;
   refreshBlogs: () => Promise<void>;
   refreshAdmins: () => Promise<void>;
+  refreshContacts: () => Promise<void>;
+  updateContactStatus: (id: string, status: string) => Promise<void>;
+  deleteContact: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -49,68 +51,44 @@ export const useApp = () => {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentAdmin, setCurrentAdmin] = useState<any>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('accessToken');
-  });
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('accessToken'));
   const [stories, setStories] = useState<any[]>([]);
   const [blogs, setBlogs] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
+  const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<any[]>(() => {
     const saved = localStorage.getItem('recent_searches');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return [];
-      }
-    }
-    return [];
+    return saved ? JSON.parse(saved) : [];
   });
 
-  // Helper function to get auth headers
-  const getAuthHeaders = useCallback(() => ({
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  }), [token]);
-
-  // Helper for FormData uploads
-  const getUploadHeaders = useCallback(() => ({
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data'
-    }
-  }), [token]);
-
-  // Load admin data
+  // ── Load admin data ──────────────────────────────────────
   const loadAdminData = useCallback(async () => {
     if (!token) return;
 
     try {
       setLoading(true);
-      console.log('🔄 Loading admin data...');
-
-      const response = await axios.get(`${API_URL}/api/admin/me`, getAuthHeaders());
+      const response = await authApi.getMe();
 
       if (response.data.success) {
         setCurrentAdmin(response.data.data);
         setIsLoggedIn(true);
 
-        // Load stories and blogs in parallel
-        const [storiesRes, blogsRes] = await Promise.all([
-          axios.get(`${API_URL}/api/content/stories`, getAuthHeaders()),
-          axios.get(`${API_URL}/api/content/blogs`, getAuthHeaders())
+        // Load stories, blogs, and contacts in parallel
+        const [storiesRes, blogsRes, contactsRes] = await Promise.all([
+          storyApi.getAll().catch(() => ({ data: { data: [] } })),
+          blogApi.getAll().catch(() => ({ data: { data: [] } })),
+          contactApi.getAll().catch(() => ({ data: { data: [] } })),
         ]);
 
         setStories(storiesRes.data.data || []);
         setBlogs(blogsRes.data.data || []);
+        setContacts(contactsRes.data.data || []);
 
         // Load admins only if superadmin
         if (response.data.data?.role === 'superadmin') {
           try {
-            const adminsRes = await axios.get(`${API_URL}/api/admin/all`, getAuthHeaders());
+            const adminsRes = await authApi.getAll();
             setAdmins(adminsRes.data.data || []);
           } catch (err) {
             console.error('Failed to load admins:', err);
@@ -120,7 +98,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (error: any) {
       console.error('Failed to load admin data:', error);
       if (error.response?.status === 401) {
-        // Token expired or invalid
         localStorage.removeItem('accessToken');
         localStorage.removeItem('adminData');
         setToken(null);
@@ -130,37 +107,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setLoading(false);
     }
-  }, [token, getAuthHeaders]);
+  }, [token]);
 
-  // Auto-load admin data when token changes
+  // ── Auto-load admin data ────────────────────────────────
   useEffect(() => {
     if (token && !currentAdmin) {
       loadAdminData();
     }
   }, [token, currentAdmin, loadAdminData]);
 
-  // Login
+  // ── Login ────────────────────────────────────────────────
   const login = async (email: string, password: string, isSuper: boolean = false) => {
     setLoading(true);
     try {
-      const endpoint = isSuper ? '/api/admin/login/super' : '/api/admin/login';
-      const response = await axios.post(`${API_URL}${endpoint}`, { email, password });
-
-      console.log('🔐 Login response:', response.data);
+      const response = await authApi.login(email, password, isSuper);
 
       if (response.data.success) {
         const { accessToken, admin } = response.data;
-        
-        // Store tokens
+
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('adminData', JSON.stringify(admin));
-        
-        // Update state
+
         setToken(accessToken);
         setCurrentAdmin(admin);
         setIsLoggedIn(true);
-        
-        // Load full data
+
         await loadAdminData();
         return true;
       }
@@ -173,53 +144,115 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Logout
-  const logout = useCallback(() => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('adminData');
-    setToken(null);
-    setCurrentAdmin(null);
-    setIsLoggedIn(false);
-    setStories([]);
-    setBlogs([]);
-    setAdmins([]);
+  // ── Logout ────────────────────────────────────────────────
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('adminData');
+      setToken(null);
+      setCurrentAdmin(null);
+      setIsLoggedIn(false);
+      setStories([]);
+      setBlogs([]);
+      setAdmins([]);
+      setContacts([]);
+    }
   }, []);
 
-  // Refresh functions
+  // ── ✅ FIXED: Refresh Stories (PUBLIC - No auth required) ──
   const refreshStories = useCallback(async () => {
-    if (!token) return;
     try {
-      const response = await axios.get(`${API_URL}/api/content/stories`, getAuthHeaders());
+      console.log('🔄 Fetching stories (public)...');
+      const response = await storyApi.getAll();
+      console.log('✅ Stories fetched:', response.data.data?.length || 0);
       setStories(response.data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to refresh stories:', error);
-      throw error;
+      // Don't throw, just set empty array
+      setStories([]);
     }
-  }, [token, getAuthHeaders]);
+  }, []);
 
+  // ── ✅ FIXED: Refresh Blogs (PUBLIC - No auth required) ──
   const refreshBlogs = useCallback(async () => {
-    if (!token) return;
     try {
-      const response = await axios.get(`${API_URL}/api/content/blogs`, getAuthHeaders());
+      console.log('🔄 Fetching blogs (public)...');
+      const response = await blogApi.getAll();
+      console.log('✅ Blogs fetched:', response.data.data?.length || 0);
       setBlogs(response.data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to refresh blogs:', error);
-      throw error;
+      // Don't throw, just set empty array
+      setBlogs([]);
     }
-  }, [token, getAuthHeaders]);
+  }, []);
 
+  // ── Refresh Admins (Protected) ──────────────────────────
   const refreshAdmins = useCallback(async () => {
     if (!token || currentAdmin?.role !== 'superadmin') return;
     try {
-      const response = await axios.get(`${API_URL}/api/admin/all`, getAuthHeaders());
+      const response = await authApi.getAll();
       setAdmins(response.data.data || []);
     } catch (error) {
       console.error('Failed to refresh admins:', error);
       throw error;
     }
-  }, [token, currentAdmin, getAuthHeaders]);
+  }, [token, currentAdmin]);
 
-  // Recent searches
+  // ── Refresh Contacts (Protected) ────────────────────────
+  const refreshContacts = useCallback(async () => {
+    if (!token) {
+      console.log('No token, skipping contacts fetch');
+      return;
+    }
+    try {
+      console.log('🔄 Fetching contacts...');
+      const response = await contactApi.getAll();
+      console.log('✅ Contacts fetched:', response.data);
+      setContacts(response.data.data || []);
+    } catch (error: any) {
+      console.error('Failed to refresh contacts:', error);
+      if (error.response?.status === 401) {
+        console.log('Unauthorized - token may be expired');
+      }
+    }
+  }, [token]);
+
+  // ── Update Contact Status ───────────────────────────────
+  const updateContactStatus = useCallback(async (id: string, status: string) => {
+    if (!token) throw new Error('Not authenticated');
+    try {
+      const response = await contactApi.updateStatus(id, status);
+      if (response.data.success) {
+        setContacts(prev => 
+          prev.map(c => c._id === id ? { ...c, status } : c)
+        );
+      }
+    } catch (error) {
+      console.error('Failed to update contact status:', error);
+      throw error;
+    }
+  }, [token]);
+
+  // ── Delete Contact ──────────────────────────────────────
+  const deleteContact = useCallback(async (id: string) => {
+    if (!token) throw new Error('Not authenticated');
+    try {
+      const response = await contactApi.delete(id);
+      if (response.data.success) {
+        setContacts(prev => prev.filter(c => c._id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete contact:', error);
+      throw error;
+    }
+  }, [token]);
+
+  // ── Recent searches ──────────────────────────────────────
   const addRecent = useCallback((search: any) => {
     setRecentSearches(prev => {
       const filtered = prev.filter(s => s.city !== search.city);
@@ -234,190 +267,184 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('recent_searches');
   }, []);
 
-  // ============================================================
-  // STORY CRUD
-  // ============================================================
+  // ── Story CRUD ──────────────────────────────────────────
   const addStory = useCallback(async (storyData: any) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.post(`${API_URL}/api/content/stories`, storyData, getAuthHeaders());
+      const response = await storyApi.create(storyData);
       if (response.data.success) {
         setStories(prev => [response.data.data, ...prev]);
+        // ✅ Refresh stories after adding
+        await refreshStories();
         return true;
       }
       return false;
-    } catch (error: any) {
-      console.error('Add story error:', error.response?.data || error);
+    } catch (error) {
+      console.error('Add story error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders]);
+  }, [token, refreshStories]);
 
   const updateStory = useCallback(async (id: string, data: any) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.put(`${API_URL}/api/content/stories/${id}`, data, getAuthHeaders());
+      const response = await storyApi.update(id, data);
       if (response.data.success) {
         setStories(prev => prev.map(s => s._id === id ? response.data.data : s));
+        await refreshStories();
         return true;
       }
       return false;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Update story error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders]);
+  }, [token, refreshStories]);
 
   const deleteStory = useCallback(async (id: string) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.delete(`${API_URL}/api/content/stories/${id}`, getAuthHeaders());
+      const response = await storyApi.delete(id);
       if (response.data.success) {
         setStories(prev => prev.filter(s => s._id !== id));
+        await refreshStories();
         return true;
       }
       return false;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete story error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders]);
+  }, [token, refreshStories]);
 
-  // ============================================================
-  // BLOG CRUD
-  // ============================================================
+  // ── Blog CRUD ────────────────────────────────────────────
   const addBlog = useCallback(async (blogData: any) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      console.log('📝 Adding blog...');
-      const response = await axios.post(`${API_URL}/api/content/blogs`, blogData, getAuthHeaders());
-      console.log('✅ Blog added:', response.data);
+      const response = await blogApi.create(blogData);
       if (response.data.success) {
         setBlogs(prev => [response.data.data, ...prev]);
+        // ✅ Refresh blogs after adding
+        await refreshBlogs();
         return true;
       }
       return false;
-    } catch (error: any) {
-      console.error('Add blog error:', error.response?.data || error);
+    } catch (error) {
+      console.error('Add blog error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders]);
+  }, [token, refreshBlogs]);
 
   const updateBlog = useCallback(async (id: string, data: any) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.put(`${API_URL}/api/content/blogs/${id}`, data, getAuthHeaders());
+      const response = await blogApi.update(id, data);
       if (response.data.success) {
         setBlogs(prev => prev.map(b => b._id === id ? response.data.data : b));
+        await refreshBlogs();
         return true;
       }
       return false;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Update blog error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders]);
+  }, [token, refreshBlogs]);
 
   const deleteBlog = useCallback(async (id: string) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.delete(`${API_URL}/api/content/blogs/${id}`, getAuthHeaders());
+      const response = await blogApi.delete(id);
       if (response.data.success) {
         setBlogs(prev => prev.filter(b => b._id !== id));
+        await refreshBlogs();
         return true;
       }
       return false;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete blog error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders]);
+  }, [token, refreshBlogs]);
 
-  // ============================================================
-  // ADMIN MANAGEMENT
-  // ============================================================
+  // ── Admin management ──────────────────────────────────────
   const createAdmin = useCallback(async (adminData: any) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.post(`${API_URL}/api/admin/create`, adminData, getAuthHeaders());
+      const response = await authApi.create(adminData);
       if (response.data.success) {
         await refreshAdmins();
         return true;
       }
       return false;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Create admin error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders, refreshAdmins]);
+  }, [token, refreshAdmins]);
 
   const updateAdmin = useCallback(async (id: string, data: any) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.put(`${API_URL}/api/admin/${id}`, data, getAuthHeaders());
+      const response = await authApi.update(id, data);
       if (response.data.success) {
         await refreshAdmins();
         return true;
       }
       return false;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Update admin error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders, refreshAdmins]);
+  }, [token, refreshAdmins]);
 
   const deleteAdmin = useCallback(async (id: string) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.delete(`${API_URL}/api/admin/${id}`, getAuthHeaders());
+      const response = await authApi.delete(id);
       if (response.data.success) {
         await refreshAdmins();
         return true;
       }
       return false;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete admin error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders, refreshAdmins]);
+  }, [token, refreshAdmins]);
 
-  // ============================================================
-  // UPLOAD FUNCTIONS
-  // ============================================================
+  // ── Upload functions ──────────────────────────────────────
   const uploadFile = useCallback(async (file: File) => {
     if (!token) throw new Error('Not authenticated');
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await axios.post(`${API_URL}/api/upload-pc`, formData, getUploadHeaders());
+      const response = await uploadApi.upload(file);
       return response.data.data;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Upload error:', error);
       throw error;
     }
-  }, [token, getUploadHeaders]);
+  }, [token]);
 
   const uploadByUrl = useCallback(async (url: string, type?: string) => {
     if (!token) throw new Error('Not authenticated');
     try {
-      const response = await axios.post(`${API_URL}/api/upload-url`, { url, type }, getAuthHeaders());
+      const response = await uploadApi.uploadByUrl(url, type);
       return response.data.data;
-    } catch (error: any) {
+    } catch (error) {
       console.error('URL upload error:', error);
       throw error;
     }
-  }, [token, getAuthHeaders]);
+  }, [token]);
 
-  // ============================================================
-  // CONTEXT VALUE
-  // ============================================================
-  const value = {
+  // ── Context value ────────────────────────────────────────
+  const value: AppContextType = {
     currentAdmin,
     isLoggedIn,
     token,
     stories,
     blogs,
     admins,
+    contacts,
     recentSearches,
     loading,
     login,
@@ -438,6 +465,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     refreshStories,
     refreshBlogs,
     refreshAdmins,
+    refreshContacts,
+    updateContactStatus,
+    deleteContact,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

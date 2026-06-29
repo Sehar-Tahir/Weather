@@ -1,12 +1,16 @@
+// ============================================================
+// WEATHERVERSE — Admin Controller
+// ============================================================
+
 const Admin = require('../models/Admin');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+const AppError = require('../utils/AppError');
+const logger = require('../utils/logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'refresh_secret_change_me';
-const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY || '15m';
+const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY || '7d';
 
 // Generate tokens
 const generateTokens = (admin) => {
@@ -15,65 +19,71 @@ const generateTokens = (admin) => {
     JWT_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRY }
   );
-  
+
   const refreshToken = admin.generateRefreshToken();
   return { accessToken, refreshToken };
 };
 
-// Super Admin Login with enhanced security
-const superAdminLogin = async (req, res) => {
+// Set cookies
+const setTokenCookies = (res, accessToken, refreshToken) => {
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+};
+
+// ── Super Admin Login ───────────────────────────────────────
+const superAdminLogin = async (req, res, next) => {
   try {
-    console.log('🔐 Super admin login attempt:', req.body.email);
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Email and password are required' 
-      });
+      return next(new AppError('Email and password are required', 400));
     }
-    
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-    
+
+    const admin = await Admin.findOne({ email: email.toLowerCase() })
+      .select('+password +refreshToken');
+
     if (!admin || admin.role !== 'superadmin') {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Delay for security
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return next(new AppError('Invalid credentials', 401));
     }
-    
+
     // Check if account is locked
     if (admin.isLocked) {
       const remaining = Math.ceil((admin.lockUntil - Date.now()) / 60000);
-      return res.status(401).json({ 
-        success: false, 
-        error: `Account locked. Try again in ${remaining} minutes.` 
-      });
+      return next(new AppError(`Account locked. Try again in ${remaining} minutes.`, 401));
     }
-    
+
     if (!admin.isActive) {
-      return res.status(401).json({ success: false, error: 'Account is deactivated' });
+      return next(new AppError('Account is deactivated', 401));
     }
-    
+
     const isValid = await admin.comparePassword(password);
     if (!isValid) {
       await admin.incrementLoginAttempts();
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      return next(new AppError('Invalid credentials', 401));
     }
-    
+
     // Reset login attempts on success
     await admin.resetLoginAttempts();
     admin.lastLogin = new Date();
     await admin.save();
-    
+
     const { accessToken, refreshToken } = generateTokens(admin);
-    
-    // Set refresh token as HTTP-only cookie
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
-    
+    setTokenCookies(res, accessToken, refreshToken);
+
+    logger.info(`Super admin logged in: ${admin.email}`);
+
     res.json({
       success: true,
       accessToken,
@@ -83,39 +93,55 @@ const superAdminLogin = async (req, res) => {
         name: admin.name,
         role: admin.role,
         permissions: admin.permissions,
-        profileImage: admin.profileImage
-      }
+        profileImage: admin.profileImage,
+      },
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    next(error);
   }
 };
 
-// Refresh token endpoint
-const refreshToken = async (req, res) => {
+// ── Admin Login ─────────────────────────────────────────────
+const adminLogin = async (req, res, next) => {
   try {
-    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
-    
-    if (!refreshToken) {
-      return res.status(401).json({ success: false, error: 'Refresh token required' });
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return next(new AppError('Email and password are required', 400));
     }
-    
-    const admin = await Admin.findOne({ refreshToken });
-    
-    if (!admin || !admin.isActive) {
-      return res.status(401).json({ success: false, error: 'Invalid refresh token' });
+
+    const admin = await Admin.findOne({ email: email.toLowerCase() })
+      .select('+password +refreshToken');
+
+    if (!admin) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return next(new AppError('Invalid credentials', 401));
     }
-    
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(admin);
-    
-    res.cookie('refreshToken', newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-    
+
+    if (admin.isLocked) {
+      const remaining = Math.ceil((admin.lockUntil - Date.now()) / 60000);
+      return next(new AppError(`Account locked. Try again in ${remaining} minutes.`, 401));
+    }
+
+    if (!admin.isActive) {
+      return next(new AppError('Account is deactivated', 401));
+    }
+
+    const isValid = await admin.comparePassword(password);
+    if (!isValid) {
+      await admin.incrementLoginAttempts();
+      return next(new AppError('Invalid credentials', 401));
+    }
+
+    await admin.resetLoginAttempts();
+    admin.lastLogin = new Date();
+    await admin.save();
+
+    const { accessToken, refreshToken } = generateTokens(admin);
+    setTokenCookies(res, accessToken, refreshToken);
+
+    logger.info(`Admin logged in: ${admin.email}`);
+
     res.json({
       success: true,
       accessToken,
@@ -124,108 +150,80 @@ const refreshToken = async (req, res) => {
         email: admin.email,
         name: admin.name,
         role: admin.role,
-        permissions: admin.permissions
-      }
+        permissions: admin.permissions,
+        profileImage: admin.profileImage,
+      },
     });
   } catch (error) {
-    console.error('Refresh token error:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    next(error);
   }
 };
 
-// Logout
-const logout = async (req, res) => {
+// ── Refresh Token ──────────────────────────────────────────
+const refreshToken = async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!refreshToken) {
+      return next(new AppError('Refresh token required', 401));
+    }
+
+    const admin = await Admin.findOne({ refreshToken })
+      .select('+password');
+
+    if (!admin || !admin.isActive) {
+      return next(new AppError('Invalid refresh token', 401));
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(admin);
+    setTokenCookies(res, accessToken, newRefreshToken);
+
+    res.json({
+      success: true,
+      accessToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ── Logout ─────────────────────────────────────────────────
+const logout = async (req, res, next) => {
   try {
     if (req.admin) {
       await Admin.findByIdAndUpdate(req.admin._id, { refreshToken: null });
     }
-    
+
+    res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
+
     res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-// Regular Admin Login
-const adminLogin = async (req, res) => {
+// ── Get Current Admin ──────────────────────────────────────
+const getMe = async (req, res, next) => {
   try {
-    console.log('🔐 Admin login attempt:', req.body.email);
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Email and password are required' 
-      });
-    }
-    
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-    
-    if (!admin) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-    
-    if (admin.isLocked) {
-      const remaining = Math.ceil((admin.lockUntil - Date.now()) / 60000);
-      return res.status(401).json({ 
-        success: false, 
-        error: `Account locked. Try again in ${remaining} minutes.` 
-      });
-    }
-    
-    if (!admin.isActive) {
-      return res.status(401).json({ success: false, error: 'Account is deactivated' });
-    }
-    
-    const isValid = await admin.comparePassword(password);
-    if (!isValid) {
-      await admin.incrementLoginAttempts();
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-    
-    await admin.resetLoginAttempts();
-    admin.lastLogin = new Date();
-    await admin.save();
-    
-    const { accessToken, refreshToken } = generateTokens(admin);
-    
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-    
-    res.json({
-      success: true,
-      accessToken,
-      admin: {
-        id: admin._id,
-        email: admin.email,
-        name: admin.name,
-        role: admin.role,
-        permissions: admin.permissions,
-        profileImage: admin.profileImage
-      }
-    });
+    const admin = await Admin.findById(req.admin._id)
+      .select('-password -refreshToken');
+    res.json({ success: true, data: admin });
   } catch (error) {
-    console.error('Admin login error:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    next(error);
   }
 };
 
-// Create new admin (superadmin only)
-const createAdmin = async (req, res) => {
+// ── Create Admin (Super Admin only) ──────────────────────
+const createAdmin = async (req, res, next) => {
   try {
     const { email, name, password, permissions, role = 'admin' } = req.body;
-    
+
     const existingAdmin = await Admin.findOne({ email: email.toLowerCase() });
     if (existingAdmin) {
-      return res.status(400).json({ success: false, error: 'Admin already exists' });
+      return next(new AppError('Admin already exists', 400));
     }
-    
+
     const newAdmin = new Admin({
       email: email.toLowerCase(),
       name,
@@ -236,13 +234,15 @@ const createAdmin = async (req, res) => {
         blogs: true,
         media: true,
         manageAdmins: false,
-        manageSettings: false
+        manageSettings: false,
       },
-      createdBy: req.admin._id
+      createdBy: req.admin._id,
     });
-    
+
     await newAdmin.save();
-    
+
+    logger.info(`New admin created: ${newAdmin.email} by ${req.admin.email}`);
+
     res.status(201).json({
       success: true,
       message: 'Admin created successfully',
@@ -252,60 +252,64 @@ const createAdmin = async (req, res) => {
         name: newAdmin.name,
         role: newAdmin.role,
         permissions: newAdmin.permissions,
-        isActive: newAdmin.isActive
-      }
+        isActive: newAdmin.isActive,
+      },
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-// Get all admins
-const getAdmins = async (req, res) => {
+// ── Get All Admins ─────────────────────────────────────────
+const getAdmins = async (req, res, next) => {
   try {
     const admins = await Admin.find()
       .select('-password -refreshToken')
       .populate('createdBy', 'name email')
       .sort({ createdAt: -1 });
-    
+
     res.json({ success: true, data: admins });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-// Get single admin
-const getAdmin = async (req, res) => {
+// ── Get Single Admin ──────────────────────────────────────
+const getAdmin = async (req, res, next) => {
   try {
     const admin = await Admin.findById(req.params.id)
       .select('-password -refreshToken');
+
     if (!admin) {
-      return res.status(404).json({ success: false, error: 'Admin not found' });
+      return next(new AppError('Admin not found', 404));
     }
+
     res.json({ success: true, data: admin });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-// Update admin
-const updateAdmin = async (req, res) => {
+// ── Update Admin ──────────────────────────────────────────
+const updateAdmin = async (req, res, next) => {
   try {
     const { name, permissions, isActive, role, profileImage } = req.body;
-    
+
     const admin = await Admin.findById(req.params.id);
     if (!admin) {
-      return res.status(404).json({ success: false, error: 'Admin not found' });
+      return next(new AppError('Admin not found', 404));
     }
-    
+
     if (name) admin.name = name;
     if (permissions) admin.permissions = permissions;
     if (typeof isActive !== 'undefined') admin.isActive = isActive;
     if (role && req.admin.role === 'superadmin') admin.role = role;
     if (profileImage) admin.profileImage = profileImage;
-    
+
     await admin.save();
-    
+
+    logger.info(`Admin updated: ${admin.email} by ${req.admin.email}`);
+
     res.json({
       success: true,
       message: 'Admin updated successfully',
@@ -316,112 +320,111 @@ const updateAdmin = async (req, res) => {
         role: admin.role,
         permissions: admin.permissions,
         isActive: admin.isActive,
-        profileImage: admin.profileImage
-      }
+        profileImage: admin.profileImage,
+      },
     });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-// Delete admin
-const deleteAdmin = async (req, res) => {
+// ── Delete Admin ──────────────────────────────────────────
+const deleteAdmin = async (req, res, next) => {
   try {
     const admin = await Admin.findById(req.params.id);
-    
+
     if (!admin) {
-      return res.status(404).json({ success: false, error: 'Admin not found' });
+      return next(new AppError('Admin not found', 404));
     }
-    
+
     if (admin.role === 'superadmin') {
-      return res.status(403).json({ success: false, error: 'Cannot delete super admin' });
+      return next(new AppError('Cannot delete super admin', 403));
     }
-    
+
     await admin.deleteOne();
-    
+
+    logger.info(`Admin deleted: ${admin.email} by ${req.admin.email}`);
+
     res.json({ success: true, message: 'Admin deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-// Change password
-const changePassword = async (req, res) => {
+// ── Change Password ──────────────────────────────────────
+const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const admin = await Admin.findById(req.admin._id);
-    
+
+    const admin = await Admin.findById(req.admin._id).select('+password');
+
     const isValid = await admin.comparePassword(currentPassword);
     if (!isValid) {
-      return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+      return next(new AppError('Current password is incorrect', 401));
     }
-    
+
     admin.password = newPassword;
     await admin.save();
-    
+
+    logger.info(`Password changed for: ${admin.email}`);
+
     res.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-// Get current admin profile
-const getMe = async (req, res) => {
-  try {
-    const admin = await Admin.findById(req.admin._id)
-      .select('-password -refreshToken');
-    res.json({ success: true, data: admin });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
-
-// Seed Super Admin
-const seedSuperAdmin = async (req, res) => {
+// ── Seed Super Admin ──────────────────────────────────────
+const seedSuperAdmin = async (req, res, next) => {
   try {
     const existingSuper = await Admin.findOne({ role: 'superadmin' });
-    
+
     if (!existingSuper) {
       const superAdmin = new Admin({
-        email: 'samaiqatanvir@gmail.com',
-        password: 'samaiqa321',
-        name: 'Samai Qatanvir',
+        email: process.env.ADMIN_EMAIL || 'samaiqatanvir@gmail.com',
+        password: process.env.ADMIN_PASSWORD || 'Admin@2024Secure!',
+        name: process.env.ADMIN_NAME || 'Samai Qatanvir',
         role: 'superadmin',
         permissions: {
           stories: true,
           blogs: true,
           media: true,
           manageAdmins: true,
-          manageSettings: true
-        }
+          manageSettings: true,
+        },
+        isActive: true,
       });
-      
+
       await superAdmin.save();
-      
-      res.json({ 
-        success: true, 
-        message: 'Super admin created: samaiqatanvir@gmail.com / samaiqa321' 
+      logger.info('Super admin seeded successfully');
+
+      res.json({
+        success: true,
+        message: 'Super admin created successfully',
+        credentials: {
+          email: superAdmin.email,
+          password: process.env.ADMIN_PASSWORD || 'Admin@2024Secure!',
+        },
       });
     } else {
       res.json({ success: true, message: 'Super admin already exists' });
     }
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    next(error);
   }
 };
 
-// Export all functions
 module.exports = {
   superAdminLogin,
   adminLogin,
   refreshToken,
   logout,
+  getMe,
   createAdmin,
   getAdmins,
   getAdmin,
   updateAdmin,
   deleteAdmin,
   changePassword,
-  getMe,
-  seedSuperAdmin
+  seedSuperAdmin,
 };

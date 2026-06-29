@@ -1,65 +1,96 @@
-// controllers/uploadController.js
+// ============================================================
+// WEATHERVERSE — Upload Controller with Cloudinary
+// ============================================================
+
+const { uploadToCloudinary, deleteFromCloudinary } = require('../config/cloudinary');
+const fs = require('fs');
 const path = require('path');
 
-// Local upload handler
-const uploadLocal = (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  
-  const type = req.file.mimetype.startsWith('video') ? 'video' : 'image';
-  const url = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
-  
-  res.json({ 
-    success: true, 
-    data: { 
-      url, 
-      type, 
-      name: req.file.originalname,
-      filename: req.file.filename
-    } 
-  });
-};
-
-// Upload by URL/link
-const uploadByUrl = async (req, res) => {
+// ── Upload single file to Cloudinary ──────────────────────
+const uploadFile = async (req, res, next) => {
   try {
-    const { url, type } = req.body;
-    
-    if (!url) {
-      return res.status(400).json({ error: 'URL is required' });
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
-    
-    // Validate URL format
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-    if (!urlPattern.test(url)) {
-      return res.status(400).json({ error: 'Invalid URL format' });
+
+    // Upload to Cloudinary
+    const result = await uploadToCloudinary(req.file.path);
+
+    // Delete local file after upload
+    try {
+      fs.unlinkSync(req.file.path);
+    } catch (err) {
+      console.warn('Could not delete local file:', err);
     }
-    
-    // Determine type from URL if not provided
-    let mediaType = type;
-    if (!mediaType) {
-      const ext = path.extname(url).toLowerCase();
-      if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
-        mediaType = 'image';
-      } else if (['.mp4', '.webm', '.ogg'].includes(ext)) {
-        mediaType = 'video';
-      } else {
-        mediaType = 'link';
-      }
-    }
-    
-    res.json({ 
-      success: true, 
-      data: { 
-        url, 
+
+    const mediaType = req.file.mimetype.startsWith('video') ? 'video' : 'image';
+
+    res.json({
+      success: true,
+      data: {
+        url: result.url,
+        publicId: result.publicId,
         type: mediaType,
-        isExternal: true
-      } 
+        name: req.file.originalname,
+        width: result.width,
+        height: result.height,
+      },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Upload error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
-module.exports = { uploadLocal, uploadByUrl };
+// ── Upload by URL ──────────────────────────────────────────
+const uploadByUrl = async (req, res, next) => {
+  try {
+    const { url, type } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ success: false, error: 'URL is required' });
+    }
+
+    // Upload to Cloudinary from URL
+    const result = await uploadToCloudinary(url);
+
+    res.json({
+      success: true,
+      data: {
+        url: result.url,
+        publicId: result.publicId,
+        type: type || 'image',
+      },
+    });
+  } catch (error) {
+    console.error('URL upload error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ── Delete file ────────────────────────────────────────────
+const deleteFile = async (req, res, next) => {
+  try {
+    const { publicId } = req.params;
+
+    if (!publicId) {
+      return res.status(400).json({ success: false, error: 'Public ID is required' });
+    }
+
+    await deleteFromCloudinary(publicId);
+
+    res.json({
+      success: true,
+      message: 'File deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+module.exports = {
+  uploadFile,
+  uploadByUrl,
+  deleteFile,
+};

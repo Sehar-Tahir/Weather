@@ -1,19 +1,24 @@
-// routes/uploadRoutes.js - COMPLETE FIXED VERSION
+// ============================================================
+// WEATHERVERSE — Upload Routes
+// ============================================================
+
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const router = express.Router();
 const { protect } = require('../middleware/auth');
 
-// Ensure /uploads dir exists
+// ── Initialize router ─────────────────────────────────────────
+const router = express.Router();
+
+// ── Ensure uploads directory exists ──────────────────────────
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   console.log('✅ Uploads directory created at:', UPLOAD_DIR);
 }
 
-// Multer disk storage for PC uploads
+// ── Multer configuration ──────────────────────────────────────
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, UPLOAD_DIR);
@@ -25,7 +30,6 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter for images and videos
 const fileFilter = (_req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|webm|ogg|mov/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -38,14 +42,15 @@ const fileFilter = (_req, file, cb) => {
   }
 };
 
-// Configure multer
 const upload = multer({
   storage: storage,
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
   fileFilter: fileFilter,
 });
 
-// Local file upload (Protected)
+// ── Routes ──────────────────────────────────────────────────────
+
+// ✅ POST /upload-pc - Upload from PC (Protected)
 router.post('/upload-pc', protect, upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
@@ -53,9 +58,14 @@ router.post('/upload-pc', protect, upload.single('file'), (req, res) => {
     }
     
     const fileType = req.file.mimetype.startsWith('image') ? 'image' : 'video';
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    
+    // Get the full URL
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
     
     console.log('✅ File uploaded:', req.file.filename);
+    console.log('✅ URL:', fileUrl);
     
     res.json({
       success: true,
@@ -73,7 +83,37 @@ router.post('/upload-pc', protect, upload.single('file'), (req, res) => {
   }
 });
 
-// URL upload (Protected)
+// ✅ POST /upload-multiple - Upload multiple files (Protected)
+router.post('/upload-multiple', protect, upload.array('files', 10), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, error: 'No files uploaded' });
+    }
+    
+    const protocol = req.protocol;
+    const host = req.get('host');
+    
+    const files = req.files.map(file => ({
+      url: `${protocol}://${host}/uploads/${file.filename}`,
+      type: file.mimetype.startsWith('image') ? 'image' : 'video',
+      name: file.originalname,
+      filename: file.filename,
+      size: file.size
+    }));
+    
+    console.log(`✅ ${files.length} files uploaded`);
+    
+    res.json({
+      success: true,
+      data: files
+    });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ✅ POST /upload-url - Upload by URL (Protected)
 router.post('/upload-url', protect, async (req, res) => {
   try {
     const { url, type } = req.body;
@@ -117,4 +157,29 @@ router.post('/upload-url', protect, async (req, res) => {
   }
 });
 
+// ✅ DELETE /upload/:publicId - Delete file (Protected)
+router.delete('/upload/:publicId', protect, async (req, res) => {
+  try {
+    const { publicId } = req.params;
+    
+    if (!publicId) {
+      return res.status(400).json({ success: false, error: 'Public ID is required' });
+    }
+    
+    // For local uploads, we delete the file from the uploads folder
+    const filePath = path.join(UPLOAD_DIR, publicId);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`✅ File deleted: ${publicId}`);
+      return res.json({ success: true, message: 'File deleted successfully' });
+    }
+    
+    res.status(404).json({ success: false, error: 'File not found' });
+  } catch (error) {
+    console.error('Delete error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ── Export ──────────────────────────────────────────────────────
 module.exports = router;

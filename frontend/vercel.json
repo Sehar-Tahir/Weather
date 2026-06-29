@@ -1,8 +1,14 @@
 {
+  "frontend/vercel.json"
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "VITE_API_URL": "https://your-backend.onrender.com"
+  }
 }
